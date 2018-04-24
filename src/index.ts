@@ -1,5 +1,5 @@
-import express from 'express'
-import bodyParser from 'body-parser'
+import * as express from 'express'
+import * as bodyParser from 'body-parser'
 
 const app = express()
 app.use((req, res, next) => {
@@ -13,6 +13,7 @@ app.use(bodyParser.json())
 
 app.post('/add', (req, res) => {
   console.log(req)
+  res.send('OK')
 })
 
 app.listen(2000, () => 

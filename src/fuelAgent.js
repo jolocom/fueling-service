@@ -10,20 +10,24 @@ function fuelService() {
 }
 
 fuelService.prototype.getBalance = function() {
-  return this.web3.eth.getBalance(this.myWallet.address).then(amount => {
+  return this.web3.eth.getBlance(this.myWallet.address).then(amount => {
     return this.web3.utils.fromWei(amount, 'ether')
   })
 }
 
 fuelService.prototype.sendEther = function(address) {
   const value = this.web3.utils.toHex(this.web3.utils.toWei(config.amount, 'ether'))
-
   return this.web3.eth.getTransactionCount(this.myWallet.address).then(nonce => {
+
+    const hexNonce = this.web3.utils.toHex(nonce)
+    const hexGasLimit = this.web3.utils.toHex(config.gasLimit)
+    const hexGasPrice = this.web3.utils.toHex(config.gasPrice)
+
     const tx = new Transaction({
-      nonce: nonce,
+      nonce: hexNonce,
       value: value,
-      gasLimit: config.gasLimit,
-      gasPrice: config.gasPrice,
+      gasLimit: hexGasLimit,
+      gasPrice: hexGasPrice,
       to: address
     })
 
@@ -32,7 +36,7 @@ fuelService.prototype.sendEther = function(address) {
 
     return new Promise((resolve, reject) => {
       this.web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
-        .on('confirmation', () => {
+        .on('confirmation', (confirmationNumber, receipt) => {
           return resolve('DONE')
         })
         .on('error', (err) => {

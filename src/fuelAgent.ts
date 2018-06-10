@@ -54,10 +54,10 @@ export class fuelService {
 
     try {
       await this.web3.eth.sendSignedTransaction(`0x${tx.serialize().toString('hex')}`)
-      console.log(`SUCCESS: ${w.address} sent ${amount / 1e9} ETH to ${address}`)
+      console.log(`SUCCESS: ${w.address} sent ${this.web3.utils.fromWei(amount.toString())} ETH to ${address}`)
       this.keyManager.releaseKey(freeKey)
     } catch (err) {
-      console.log(`ERROR: ${w.address} failed to send ${amount / 1e9} ETH - ${err.message}`)
+      console.log(`ERROR: ${w.address} failed to send ${this.web3.utils.fromWei(amount.toString())} ETH - ${err.message}`)
       await this.sendEther(address)
       this.keyManager.releaseKey(freeKey)
     }

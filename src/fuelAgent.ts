@@ -35,6 +35,7 @@ export class fuelService {
     const freeKey = this.keyManager.getFreeKey()
 
     if (!freeKey) {
+      console.log('ERROR: All keys are busy')
       throw new Error('All keys busy')
     }
 
@@ -58,7 +59,7 @@ export class fuelService {
       this.keyManager.releaseKey(freeKey)
     } catch (err) {
       console.log(`ERROR: ${w.address} failed to send ${this.web3.utils.fromWei(amount.toString())} ETH - ${err.message}`)
-      await this.sendEther(address)
+      await this.sendEther(address, amount)
       this.keyManager.releaseKey(freeKey)
     }
   }
@@ -72,7 +73,7 @@ export class fuelService {
 
     const toBeDistributed = Number(await this.getBalance(addresses[0]))
     const availableToSend = toBeDistributed - (txFeeInEth * (addresses.length - 1))
-    const toSend = (availableToSend / (addresses.length - 1))
+    const toSend = (availableToSend / (addresses.length))
     const toSendInWei = this.web3.utils.toWei(toSend.toString())
     for (let i = 1; i < addresses.length; i++) {
       await this.sendEther(addresses[i], Math.floor(toSendInWei))

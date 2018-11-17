@@ -53,26 +53,24 @@ export class fuelService {
 
     tx.sign(Buffer.from(w.privateKey.substr(2), 'hex'))
 
-    console.log(`${this.keyManager.getNumberOfFreeKeys()} active keys available`)
+    console.log(`[DEBUG] : ${this.keyManager.getNumberOfFreeKeys()} active keys available`)
 
-    setTimeout(async () => {
-      try {
-        await this.web3.eth.sendSignedTransaction(`0x${tx.serialize().toString('hex')}`)
-        console.log(`SUCCESS: ${w.address} sent ${this.web3.utils.fromWei(amount.toString())} ETH to ${address}`)
+    try {
+      await this.web3.eth.sendSignedTransaction(`0x${tx.serialize().toString('hex')}`)
+      console.log(`SUCCESS: ${w.address} sent ${this.web3.utils.fromWei(amount.toString())} ETH to ${address}`)
+      this.keyManager.releaseKey(freeKey)
+    } catch (err) {
+      console.log(
+        `ERROR: ${w.address} failed to send ${this.web3.utils.fromWei(amount.toString())} ETH - ${err.message}`
+      )
+      if (err.message.includes('insufficient funds')) {
+        this.keyManager.markKeyAsEmpty(freeKey)
+        await this.sendEther(address, amount)
+      } else {
+        await this.sendEther(address, amount)
         this.keyManager.releaseKey(freeKey)
-      } catch (err) {
-        console.log(
-          `ERROR: ${w.address} failed to send ${this.web3.utils.fromWei(amount.toString())} ETH - ${err.message}`
-        )
-        if (err.message.includes('insufficient funds')) {
-          this.keyManager.markKeyAsEmpty(freeKey)
-          await this.sendEther(address, amount)
-        } else {
-          await this.sendEther(address, amount)
-          this.keyManager.releaseKey(freeKey)
-        }
       }
-    }, 2000)
+    }
   }
 
   public async distribute() {

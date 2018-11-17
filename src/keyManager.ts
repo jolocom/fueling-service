@@ -13,8 +13,13 @@ export class KeyManager extends EventEmitter {
     this.keys = keys
   }
 
+  markKeyAsEmpty(key: string) {
+    this.releaseKey(key)
+    this.keys = this.keys.filter((k) => k !== key)
+  }
+
   getFreeKey(): string {
-    const free = this.keys.find(k => this.busyKeys.indexOf(k) < 0)
+    const free = this.keys.find(k => this.busyKeys.indexOf(k) <= 0)
     this.busyKeys.push(free)
     return free
   }
@@ -26,5 +31,9 @@ export class KeyManager extends EventEmitter {
 
   getAllKeys() : string[] {
     return this.keys
+  }
+
+  getNumberOfFreeKeys() {
+    return this.keys.length - this.busyKeys.length
   }
 }

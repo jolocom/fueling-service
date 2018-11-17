@@ -2,7 +2,7 @@ import { Wallet } from 'ethers'
 import * as Transaction from 'ethereumjs-tx'
 import { config } from '../config'
 import { KeyManager } from './keyManager'
-const Web3 = require("web3")
+const Web3 = require('web3')
 
 export class fuelService {
   private web3: any
@@ -16,22 +16,22 @@ export class fuelService {
     this.keyManager = new KeyManager(keys)
   }
 
-  public async getBalance(address? : string) : Promise<number> {
+  public async getBalance(address?: string): Promise<number> {
     const addresses = []
 
-    if (!address){
+    if (!address) {
       const keys = this.keyManager.getAllKeys()
       addresses.push(...keys.map(k => new Wallet(k).address))
     } else {
       addresses.push(address)
     }
 
-    const results = await Promise.all(addresses.map((addr => this.web3.eth.getBalance(addr))))
+    const results = await Promise.all(addresses.map(addr => this.web3.eth.getBalance(addr)))
     const total = results.reduce((acc, curr) => Number(acc) + Number(curr))
     return this.web3.utils.fromWei(total.toString(), 'ether')
   }
 
-  public async sendEther(address: string, amount = config.amount) : Promise<void> {
+  public async sendEther(address: string, amount = config.amount): Promise<void> {
     const freeKey = this.keyManager.getFreeKey()
 
     if (!freeKey) {
@@ -53,15 +53,26 @@ export class fuelService {
 
     tx.sign(Buffer.from(w.privateKey.substr(2), 'hex'))
 
-    try {
-      await this.web3.eth.sendSignedTransaction(`0x${tx.serialize().toString('hex')}`)
-      console.log(`SUCCESS: ${w.address} sent ${this.web3.utils.fromWei(amount.toString())} ETH to ${address}`)
-      this.keyManager.releaseKey(freeKey)
-    } catch (err) {
-      console.log(`ERROR: ${w.address} failed to send ${this.web3.utils.fromWei(amount.toString())} ETH - ${err.message}`)
-      await this.sendEther(address, amount)
-      this.keyManager.releaseKey(freeKey)
-    }
+    console.log(`${this.keyManager.getNumberOfFreeKeys()} active keys available`)
+
+    setTimeout(async () => {
+      try {
+        await this.web3.eth.sendSignedTransaction(`0x${tx.serialize().toString('hex')}`)
+        console.log(`SUCCESS: ${w.address} sent ${this.web3.utils.fromWei(amount.toString())} ETH to ${address}`)
+        this.keyManager.releaseKey(freeKey)
+      } catch (err) {
+        console.log(
+          `ERROR: ${w.address} failed to send ${this.web3.utils.fromWei(amount.toString())} ETH - ${err.message}`
+        )
+        if (err.message.includes('insufficient funds')) {
+          this.keyManager.markKeyAsEmpty(freeKey)
+          await this.sendEther(address, amount)
+        } else {
+          await this.sendEther(address, amount)
+          this.keyManager.releaseKey(freeKey)
+        }
+      }
+    }, 2000)
   }
 
   public async distribute() {
@@ -72,17 +83,16 @@ export class fuelService {
     const txFeeInEth = Number(this.web3.utils.fromWei(txFeeInWei.toString()))
 
     const toBeDistributed = Number(await this.getBalance(addresses[0]))
-    const availableToSend = toBeDistributed - (txFeeInEth * (addresses.length - 1))
-    const toSend = (availableToSend / (addresses.length))
+    const availableToSend = toBeDistributed - txFeeInEth * (addresses.length - 1)
+    const toSend = availableToSend / addresses.length
     const toSendInWei = this.web3.utils.toWei(toSend.toString())
     for (let i = 1; i < addresses.length; i++) {
       await this.sendEther(addresses[i], Math.floor(toSendInWei))
-
     }
   }
 }
 
-const deriveKeys = (mnemonic: string, nrOfKeysToDerive: number) : string[] => {
+const deriveKeys = (mnemonic: string, nrOfKeysToDerive: number): string[] => {
   const results = []
   for (let i = 0; i < nrOfKeysToDerive; i++) {
     results.push(Wallet.fromMnemonic(mnemonic, `m/44'/60'/0'/0/${i}`).privateKey)

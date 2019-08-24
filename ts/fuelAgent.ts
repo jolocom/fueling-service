@@ -10,13 +10,12 @@ const NETWORK = "rinkeby";
 
 export class FuelService {
   private readonly provider: BaseProvider;
-  private keyManager: KeyManager;
+  public keyManager: KeyManager;
 
   public constructor() {
     const { seedPhrase, nrOfAddresses } = config;
     this.provider = ethers.getDefaultProvider(NETWORK);
     this.keyManager = new KeyManager(seedPhrase, nrOfAddresses);
-    this.distributeFunds();
   }
 
   public async sendEther(

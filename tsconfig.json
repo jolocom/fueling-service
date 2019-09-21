@@ -18,6 +18,7 @@
         "!./node_modules/**/*.ts"
     ],
     "exclude": [
-        "./js"
+        "./js",
+        "./tests"
     ]
 }

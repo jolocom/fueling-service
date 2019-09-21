@@ -1,19 +1,29 @@
-import { ethers } from "ethers";
+import { parseEther } from "ethers/utils";
+import { FuelService } from "../ts/fuelAgent";
 const { server } = require("ganache-core");
 
-const PORT = 8945;
+// TODO decide on sane defaults
+const blockTime = process.env.BLOCK_TIME || 15;
+export const startingBalance = process.env.STARTING_BALANCE || "30";
+export const ganachePort = process.env.GANACHE_PORT || 8945;
 
-const testEthServer = server({
-  accounts: [{ secretKey: "0x" + "a".repeat(64), balance: 100 }]
-});
+export const provisionTestNet = async (fuelingService: FuelService) => {
+  const testEthServer = server({
+    accounts: [
+      {
+        secretKey: fuelingService.keyManager.getAllKeys()[0],
+        balance: parseEther(startingBalance).toString()
+      },
+    ],
+    blockTime
+  });
 
-testEthServer.listen(PORT, async (ganacheErr: Error) => {
-  if (ganacheErr) throw ganacheErr;
-  const provider = new ethers.providers.JsonRpcProvider(
-    `http://localhost:${PORT}`
-  );
+  testEthServer.listen(ganachePort, async (ganacheErr: Error) => {
+    if (ganacheErr) {
+      throw ganacheErr;
+    }
 
-  provider
-    .listAccounts()
-    .then(console.log);
-});
+    return;
+  });
+};
+

@@ -4,6 +4,6 @@ export const config = {
   seedPhrase: 'man area total crystal walk gate rug always eyebrow flash uncover isolate',
   gasLimit: 21000,
   gasPrice: 3e9,
-  amount: 1e8,
+  amount: 0.01,
   nrOfAddresses: 32
-}
+};

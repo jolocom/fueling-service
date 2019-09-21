@@ -8,6 +8,12 @@
     "build": "rm -rf ./js; tsc -p ./tsconfig.json",
     "test": "mocha --opts ./mocha.opts ./tests/index.ts"
   },
+  "husky": {
+    "hooks": {
+      "pre-commit": "precise-commits",
+      "prepare-commit-msg": "exec < /dev/tty && git cz --hook || true"
+    }
+  },
   "dependencies": {
     "@types/mocha": "^5.2.7",
     "body-parser": "^1.18.2",
@@ -23,11 +29,20 @@
     "@types/ramda": "^0.26.21",
     "@types/supertest": "^2.0.8",
     "chai": "^4.2.0",
+    "commitizen": "^4.0.3",
+    "cz-conventional-changelog": "^3.0.2",
     "ganache-core": "^2.8.0",
+    "husky": "^3.0.5",
     "mocha": "^6.2.0",
+    "precise-commits": "^1.0.2",
     "prettier": "^1.18.2",
     "supertest": "^4.0.2",
     "ts-node": "^8.3.0",
     "typescript": "^3.5.3"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   }
 }

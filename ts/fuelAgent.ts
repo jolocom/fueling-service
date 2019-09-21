@@ -1,79 +1,85 @@
-import { Wallet } from "ethers";
-import { BaseProvider, TransactionReceipt } from "ethers/providers";
-import { formatEther, parseEther } from "ethers/utils";
-import { contains, flatten, splitAt, sum, zip } from "ramda";
-import { config } from "./config";
-import { KeyManager } from "./keyManager";
-import { debug } from "./server";
-import { INSUFFICIENT_FUNDS } from "ethers/errors";
+import { Wallet } from 'ethers'
+import { BaseProvider, TransactionReceipt } from 'ethers/providers'
+import { formatEther, parseEther } from 'ethers/utils'
+import { contains, flatten, splitAt, sum, zip } from 'ramda'
+import { config } from './config'
+import { KeyManager } from './keyManager'
+import { INSUFFICIENT_FUNDS } from 'ethers/errors'
+import { debug } from './utils'
 
 export class FuelService {
-  private readonly provider: BaseProvider;
-  public keyManager: KeyManager;
+  private readonly provider: BaseProvider
+  public keyManager: KeyManager
 
   public constructor(provider: BaseProvider) {
-    const { seedPhrase, nrOfAddresses } = config;
-    this.provider = provider;
-    this.keyManager = new KeyManager(seedPhrase, nrOfAddresses);
+    const { seedPhrase, nrOfAddresses } = config
+    this.provider = provider
+    this.keyManager = new KeyManager(seedPhrase, nrOfAddresses)
   }
 
   public async sendEther(
     to: string,
     value = config.amount,
-    sourceKey = this.keyManager.getKey()
+    sourceKey = this.keyManager.getKey(),
   ): Promise<void | TransactionReceipt> {
-    const wallet = new Wallet(sourceKey, this.provider);
-    console.log(`Key - ${sourceKey}, nonce - ${await wallet.getTransactionCount()}`)
+    const wallet = new Wallet(sourceKey, this.provider)
     return wallet
       .sendTransaction({
         to,
         value: parseEther(value.toString()),
         gasLimit: config.gasLimit,
-        gasPrice: config.gasPrice
+        gasPrice: config.gasPrice,
       })
       .then(txHash => {
-        debug(txHash);
-        return txHash.wait().then(() => {
-          debug(`Sent ${value} WEI to ${to}, using ${wallet.address}`);
-        }).catch(err => debug(err));
+        debug(txHash)
+        return txHash
+          .wait()
+          .then(() => {
+            debug(`Sent ${value} WEI to ${to}, using ${wallet.address}`)
+          })
+          .catch(err => debug(err))
       })
       .catch(async err => {
         if (err.code === INSUFFICIENT_FUNDS) {
           debug(
             `Not enough funds on ${wallet.address}, removing from pool. ${
               this.keyManager.getAllKeys().length
-            } keys left.`
-          );
-          this.keyManager.removeKeyFromPool(wallet.privateKey);
+            } keys left.`,
+          )
+          this.keyManager.removeKeyFromPool(wallet.privateKey)
         }
+
+        // TODO Check if we can use NONCE_EXPIRED
+        // @see https://github.com/ethers-io/ethers.js/blob/master/src.ts/errors.ts#L51
 
         if (contains("tx doesn't have the correct nonce", err.responseText)) {
-          // If nonce is too low we can try again. Eventually wallet.getTransactionCount
-          // should succeed
-          return this.sendEther(to, value, wallet.privateKey);
+          // If nonce is too low we can try again using the same key. Eventually wallet.getTransactionCount
+          // returns a valid nonce
+          return this.sendEther(to, value, wallet.privateKey)
         }
 
-        return this.sendEther(to, value);
-      });
+        // In case of unhandled error, try again with a new key, without removing the current one from pool
+        return this.sendEther(to, value)
+      })
   }
 
   public getBalance = async (address: string): Promise<number> =>
     this.provider
       .getBalance(address)
       .then(formatEther)
-      .then(Number);
+      .then(Number)
 
   public getAllBalances = async () =>
-    Promise.all(this.keyManager.getAllAddresses().map(this.getBalance));
+    Promise.all(this.keyManager.getAllAddresses().map(this.getBalance))
 
-  public getTotalBalance = async () => this.getAllBalances().then(sum);
+  public getTotalBalance = async () => this.getAllBalances().then(sum)
 
   public async distributeFunds() {
-    const [fueler, ...rest] = this.keyManager.getAllKeys();
+    const [fueler, ...rest] = this.keyManager.getAllKeys()
     const amountToDistribute = await this.getBalance(
-      getAddressFromPrivateKey(fueler)
-    );
-    return distributeFundsLog(amountToDistribute / 2, [fueler], rest, this);
+      getAddressFromPrivateKey(fueler),
+    )
+    return distributeFundsLog(amountToDistribute / 2, [fueler], rest, this)
   }
 }
 
@@ -92,40 +98,43 @@ const distributeFundsLog = (
   amount: number,
   fuelingKeys: string[],
   toBeFueled: string[] = [],
-  fuelingService: FuelService
+  fuelingService: FuelService,
 ) => {
   if (toBeFueled.length === 0) {
-    return;
+    return
   }
 
   debug(
-    `Distributing ${amount}, from ${fuelingKeys.length} keys. ${toBeFueled.length} keys left`
-  );
+    `Distributing ${amount}, from ${fuelingKeys.length} keys. ${toBeFueled.length} keys left`,
+  )
 
-  const [toFuelInThisBatch, toBeFueledInNextBatches] = splitAt(fuelingKeys.length, toBeFueled)
-  const pairs = zip(fuelingKeys, toFuelInThisBatch);
+  const [toFuelInThisBatch, toBeFueledInNextBatches] = splitAt(
+    fuelingKeys.length,
+    toBeFueled,
+  )
+  const pairs = zip(fuelingKeys, toFuelInThisBatch)
 
   const transactions = pairs.map(([fuelingKey, toFuel]) =>
     fuelingService.sendEther(
       getAddressFromPrivateKey(toFuel),
       amount,
-      fuelingKey
-    )
-  );
+      fuelingKey,
+    ),
+  )
 
   return Promise.all(transactions)
     .then(() => {
-      const newFuelers = flatten(pairs);
+      const newFuelers = flatten(pairs)
       return distributeFundsLog(
         amount / 2,
         newFuelers,
         toBeFueledInNextBatches,
-        fuelingService
-      );
+        fuelingService,
+      )
     })
     .catch(err => {
-      debug(`Distributing failed, ${err.message}`);
-    });
-};
+      debug(`Distributing failed, ${err.message}`)
+    })
+}
 
-const getAddressFromPrivateKey = (key: string) => new Wallet(key).address;
+const getAddressFromPrivateKey = (key: string) => new Wallet(key).address

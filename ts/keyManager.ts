@@ -1,12 +1,12 @@
-import { Wallet } from "ethers";
-import { without } from "ramda";
-import { debug } from "./server";
+import { Wallet } from 'ethers'
+import { without } from 'ramda'
+import { debug } from './utils'
 
 export class KeyManager {
-  private keys: string[] = [];
+  private keys: string[] = []
 
   constructor(seedPhrase: string, nrOfAddresses: number) {
-    this.keys = deriveKeys(seedPhrase, nrOfAddresses);
+    this.keys = deriveKeys(seedPhrase, nrOfAddresses)
   }
 
   /**
@@ -16,17 +16,17 @@ export class KeyManager {
    */
 
   getKey(): string {
-    const first = this.keys.shift();
-    this.keys.push(first);
-    return first;
+    const first = this.keys.shift()
+    this.keys.push(first)
+    return first
   }
 
   getAllKeys(): string[] {
-    return this.keys;
+    return this.keys
   }
 
   getAllAddresses(): string[] {
-    return this.getAllKeys().map(k => new Wallet(k).address);
+    return this.getAllKeys().map(k => new Wallet(k).address)
   }
 
   removeKeyFromPool = (emptyKey: string) => {
@@ -43,8 +43,8 @@ export class KeyManager {
  */
 
 const deriveKeys = (mnemonic: string, nrOfKeysToDerive: number): string[] => {
-  const basePath = "m/44'/60'/0'/0";
+  const basePath = "m/44'/60'/0'/0"
   return [...new Array(nrOfKeysToDerive)].map(
-    (_, i) => Wallet.fromMnemonic(mnemonic, `${basePath}/${i}`).privateKey
-  );
-};
+    (_, i) => Wallet.fromMnemonic(mnemonic, `${basePath}/${i}`).privateKey,
+  )
+}

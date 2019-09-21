@@ -4,9 +4,18 @@ import { Express } from "express";
 import { zip } from 'ramda';
 import { config } from "../ts/config";
 import { FuelService } from "../ts/fuelAgent";
-import { getConfiguredApp } from "../ts/server";
 import { ganachePort, provisionTestNet, startingBalance } from "./provision";
+import { getConfiguredApp } from "../ts/app";
 const request = require("supertest");
+
+/**
+ * 3 environmental variables can be set when running the tests:
+ * REQUESTS - nr of fueling requests to make during stress test
+ * BLOCK_TIME - how often, in seconds, a new block is mined during tests
+ * STARTING_BALANCE - how much ETH will the fueling service start with during test
+ */
+
+const nrOfRequests = process.env.REQUESTS || config.nrOfAddresses * 10
 
 describe("Fueling service integration tests", () => {
   let app: Express;
@@ -73,7 +82,7 @@ describe("Fueling service integration tests", () => {
           expect(res.body).to.deep.eq({});
         });
 
-    const pings = new Array(320).fill(0).map(ping)
+    const pings = new Array(nrOfRequests).fill(0).map(ping)
     return Promise.all(pings).then(testFuelingService.getAllBalances).then(console.log)
   })
 })

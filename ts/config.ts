@@ -5,5 +5,5 @@ export const config = {
   gasLimit: 21000,
   gasPrice: 3e9,
   amount: 0.01,
-  nrOfAddresses: 32
-};
+  nrOfAddresses: 32,
+}

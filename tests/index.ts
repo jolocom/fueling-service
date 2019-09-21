@@ -83,7 +83,7 @@ describe("Fueling service integration tests", () => {
         });
 
     const pings = new Array(nrOfRequests).fill(0).map(ping)
-    return Promise.all(pings).then(testFuelingService.getAllBalances).then(console.log)
+    return Promise.all(pings)
   })
 })
 

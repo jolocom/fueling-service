@@ -1,20 +1,19 @@
-import { ethers, Wallet } from "ethers";
-import { config } from "./config";
-import { KeyManager } from "./keyManager";
+import { Wallet } from "ethers";
 import { BaseProvider, TransactionReceipt } from "ethers/providers";
 import { formatEther, parseEther } from "ethers/utils";
-import { sum, zip, flatten } from "ramda";
+import { contains, flatten, splitAt, sum, zip } from "ramda";
+import { config } from "./config";
+import { KeyManager } from "./keyManager";
+import { debug } from "./server";
 import { INSUFFICIENT_FUNDS } from "ethers/errors";
-
-const NETWORK = "rinkeby";
 
 export class FuelService {
   private readonly provider: BaseProvider;
   public keyManager: KeyManager;
 
-  public constructor() {
+  public constructor(provider: BaseProvider) {
     const { seedPhrase, nrOfAddresses } = config;
-    this.provider = ethers.getDefaultProvider(NETWORK);
+    this.provider = provider;
     this.keyManager = new KeyManager(seedPhrase, nrOfAddresses);
   }
 
@@ -24,6 +23,7 @@ export class FuelService {
     sourceKey = this.keyManager.getKey()
   ): Promise<void | TransactionReceipt> {
     const wallet = new Wallet(sourceKey, this.provider);
+    console.log(`Key - ${sourceKey}, nonce - ${await wallet.getTransactionCount()}`)
     return wallet
       .sendTransaction({
         to,
@@ -31,23 +31,29 @@ export class FuelService {
         gasLimit: config.gasLimit,
         gasPrice: config.gasPrice
       })
-      .then(txHash =>
-        txHash
-          .wait()
-          .then(() =>
-            console.log(`Sent ${value} WEI to ${to}, using ${wallet.address}`)
-          )
-      )
-      .catch(err => {
+      .then(txHash => {
+        debug(txHash);
+        return txHash.wait().then(() => {
+          debug(`Sent ${value} WEI to ${to}, using ${wallet.address}`);
+        }).catch(err => debug(err));
+      })
+      .catch(async err => {
         if (err.code === INSUFFICIENT_FUNDS) {
-          console.log(
+          debug(
             `Not enough funds on ${wallet.address}, removing from pool. ${
               this.keyManager.getAllKeys().length
             } keys left.`
           );
           this.keyManager.removeKeyFromPool(wallet.privateKey);
-          return this.sendEther(to, value);
         }
+
+        if (contains("tx doesn't have the correct nonce", err.responseText)) {
+          // If nonce is too low we can try again. Eventually wallet.getTransactionCount
+          // should succeed
+          return this.sendEther(to, value, wallet.privateKey);
+        }
+
+        return this.sendEther(to, value);
       });
   }
 
@@ -80,12 +86,11 @@ export class FuelService {
  * @param toBeFueled - the keys that should be fueled.
  * @note This is a recursive function.
  * @example fuelAgent.distributeFunds(5e18, ['0xabc...'], ['0x...', '0x...', ...])
- * @ TODO can underflow when dividing
  */
 
 const distributeFundsLog = (
   amount: number,
-  fueling: string[],
+  fuelingKeys: string[],
   toBeFueled: string[] = [],
   fuelingService: FuelService
 ) => {
@@ -93,12 +98,12 @@ const distributeFundsLog = (
     return;
   }
 
-  console.log(
-    `Distributing ${amount}, from ${fueling.length} keys. ${toBeFueled.length} keys left`
+  debug(
+    `Distributing ${amount}, from ${fuelingKeys.length} keys. ${toBeFueled.length} keys left`
   );
 
-  const toFuel = fueling.map(() => toBeFueled.shift());
-  const pairs = zip(fueling, toFuel);
+  const [toFuelInThisBatch, toBeFueledInNextBatches] = splitAt(fuelingKeys.length, toBeFueled)
+  const pairs = zip(fuelingKeys, toFuelInThisBatch);
 
   const transactions = pairs.map(([fuelingKey, toFuel]) =>
     fuelingService.sendEther(
@@ -112,14 +117,14 @@ const distributeFundsLog = (
     .then(() => {
       const newFuelers = flatten(pairs);
       return distributeFundsLog(
-        amount / newFuelers.length,
+        amount / 2,
         newFuelers,
-        toBeFueled,
+        toBeFueledInNextBatches,
         fuelingService
       );
     })
     .catch(err => {
-      console.log(`Distributing failed, ${err.message}`);
+      debug(`Distributing failed, ${err.message}`);
     });
 };
 

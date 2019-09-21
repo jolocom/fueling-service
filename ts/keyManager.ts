@@ -1,5 +1,6 @@
 import { Wallet } from "ethers";
 import { without } from "ramda";
+import { debug } from "./server";
 
 export class KeyManager {
   private keys: string[] = [];
@@ -29,6 +30,7 @@ export class KeyManager {
   }
 
   removeKeyFromPool = (emptyKey: string) => {
+    debug(`Removed ${emptyKey} from pool`)
     this.keys = without([emptyKey])(this.keys)
   }
 }

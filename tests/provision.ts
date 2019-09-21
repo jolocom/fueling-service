@@ -2,10 +2,9 @@ import { parseEther } from "ethers/utils";
 import { FuelService } from "../ts/fuelAgent";
 const { server } = require("ganache-core");
 
-// TODO decide on sane defaults
-const blockTime = process.env.BLOCK_TIME || 15;
+const blockTime = process.env.BLOCK_TIME || 1;
 export const startingBalance = process.env.STARTING_BALANCE || "30";
-export const ganachePort = process.env.GANACHE_PORT || 8945;
+export const ganachePort = 8945;
 
 export const provisionTestNet = async (fuelingService: FuelService) => {
   const testEthServer = server({

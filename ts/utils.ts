@@ -3,4 +3,3 @@ export const debug = <T>(message: T) => {
     console.log(message)
   }
 }
-

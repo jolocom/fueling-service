@@ -31,7 +31,7 @@ export class FuelService {
         gasPrice: config.gasPrice,
       })
       .then(txHash => {
-        debug(txHash)
+        debug(`Transaction hash: ${txHash.hash}`)
         return txHash
           .wait()
           .then(() => {
@@ -51,8 +51,7 @@ export class FuelService {
 
         // TODO Check if we can use NONCE_EXPIRED
         // @see https://github.com/ethers-io/ethers.js/blob/master/src.ts/errors.ts#L51
-
-        if (contains("tx doesn't have the correct nonce", err.responseText)) {
+        if (contains("tx doesn't have the correct nonce", [err.responseText])) {
           // If nonce is too low we can try again using the same key. Eventually wallet.getTransactionCount
           // returns a valid nonce
           return this.sendEther(to, value, wallet.privateKey)

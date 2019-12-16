@@ -22,6 +22,7 @@ export class FuelService {
     value = config.amount,
     sourceKey = this.keyManager.getKey(),
   ): Promise<void | TransactionReceipt> {
+    debug(`Request for fueling address - ${to}, with ${value} ETH`)
     const wallet = new Wallet(sourceKey, this.provider)
     return wallet
       .sendTransaction({
@@ -30,16 +31,17 @@ export class FuelService {
         gasLimit: config.gasLimit,
         gasPrice: config.gasPrice,
       })
-      .then(txHash => {
+      .then(async txHash => {
         debug(`Transaction hash: ${txHash.hash}`)
-        return txHash
-          .wait()
-          .then(() => {
-            debug(`Sent ${value} WEI to ${to}, using ${wallet.address}`)
-          })
-          .catch(err => debug(err))
+        try {
+          const receipt = await txHash.wait()
+          debug(`Sent ${value} WEI to ${to}, using ${wallet.address}`)
+          return receipt
+        } catch (err) {
+          debug(err)
+        }
       })
-      .catch(async err => {
+      .catch(err => {
         if (err.code === INSUFFICIENT_FUNDS) {
           debug(
             `Not enough funds on ${wallet.address}, removing from pool. ${
@@ -47,18 +49,14 @@ export class FuelService {
             } keys left.`,
           )
           this.keyManager.removeKeyFromPool(wallet.privateKey)
+          return this.sendEther(to, value)
+        } else if (contains("tx doesn't have the correct nonce", err.message)) {
+          debug(
+            `Conflicting nonces from fueling address ${wallet.address}, trying different key`,
+          )
+          return this.sendEther(to, value)
         }
-
-        // TODO Check if we can use NONCE_EXPIRED
-        // @see https://github.com/ethers-io/ethers.js/blob/master/src.ts/errors.ts#L51
-        if (contains("tx doesn't have the correct nonce", [err.responseText])) {
-          // If nonce is too low we can try again using the same key. Eventually wallet.getTransactionCount
-          // returns a valid nonce
-          return this.sendEther(to, value, wallet.privateKey)
-        }
-
-        // In case of unhandled error, try again with a new key, without removing the current one from pool
-        return this.sendEther(to, value)
+        // In case of unhandled error, we don't do not recurse for now
       })
   }
 

@@ -22,6 +22,11 @@ export class FuelService {
     value = config.amount,
     sourceKey = this.keyManager.getKey(),
   ): Promise<void | TransactionReceipt> {
+    if (!sourceKey) {
+      debug(`Ran out of keys, can't send funds`)
+      throw new Error('Faucet currently empty')
+    }
+
     debug(`Request for fueling address - ${to}, with ${value} ETH`)
     const wallet = new Wallet(sourceKey, this.provider)
     return wallet

@@ -17,7 +17,9 @@ export class KeyManager {
 
   getKey(): string {
     const first = this.keys.shift()
-    this.keys.push(first)
+    if (first) {
+      this.keys.push(first)
+    }
     return first
   }
 

@@ -1,5 +1,5 @@
 node_modules
 .idea
-.example
+blackList
 yarn-error.log
 js

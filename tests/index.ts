@@ -4,6 +4,7 @@ import { Express } from 'express'
 import { zip } from 'ramda'
 import { config } from '../ts/config'
 import { FuelService } from '../ts/fuelAgent'
+import { BlackList } from '../ts/blackList'
 import { ganachePort, provisionTestNet, startingBalance } from './provision'
 import { getConfiguredApp } from '../ts/app'
 const request = require('supertest')
@@ -20,6 +21,7 @@ const nrOfRequests = process.env.REQUESTS || config.nrOfAddresses * 10
 describe('Fueling service integration tests', () => {
   let app: Express
   let testFuelingService: FuelService
+  let testBlackList: BlackList
 
   const requestEther = (destinationAddress: string) =>
     request(app)
@@ -36,7 +38,8 @@ describe('Fueling service integration tests', () => {
     )
 
     testFuelingService = new FuelService(testEthProvider)
-    app = getConfiguredApp(testFuelingService)
+    testBlackList = new BlackList([])
+    app = getConfiguredApp(testFuelingService, testBlackList)
     await provisionTestNet(testFuelingService)
   })
 
@@ -104,5 +107,19 @@ describe('Fueling service integration tests', () => {
 
     return Promise.all(pings).then(results =>
       results.every(r => r && r.status === 1))
+  })
+
+  it('correctly rejects if requester is blacklisted', async () => {
+    const destinationAddress = '0x0000000000000000000000000000000000000000'
+    await requestEther(destinationAddress)
+
+    testBlackList.addToBlacklist(destinationAddress)
+    return request(app)
+      .post('/request')
+      .send({ address: destinationAddress })
+      .expect(401)
+      .then(res =>
+        expect(res.error.text).to.eq("Key already fueled")
+      )
   })
 })

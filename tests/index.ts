@@ -118,8 +118,6 @@ describe('Fueling service integration tests', () => {
       .post('/request')
       .send({ address: destinationAddress })
       .expect(401)
-      .then(res =>
-        expect(res.error.text).to.eq("Key already fueled")
-      )
+      .then(res => expect(res.error.text).to.eq('Key already fueled'))
   })
 })

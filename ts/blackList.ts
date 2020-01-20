@@ -5,7 +5,7 @@ export class BlackList {
   private blacklisted: string[] = []
   private path?: string
 
-  constructor (blacklisted: string[] = [], path?: string) {
+  constructor(blacklisted: string[] = [], path?: string) {
     this.blacklisted = blacklisted
     this.path = path
   }
@@ -24,32 +24,40 @@ export class BlackList {
   // loop accepts no further functions, so async and such do not work
   writeListToFile() {
     if (!this.path) {
-      debug(`No path to blacklist file provided in constructor, not attempting write`)
+      debug(
+        `No path to blacklist file provided in constructor, not attempting write`,
+      )
       return
     }
 
     debug(`Blacklist written to ${this.path}`)
-    return writeFileSync(this.path, JSON.stringify({blackList: this.blacklisted}))
+    return writeFileSync(
+      this.path,
+      JSON.stringify({ blackList: this.blacklisted }),
+    )
   }
 
   async initFromFile() {
     if (!this.path) {
-      debug(`No path to blacklist file provided in constructor, not attempting read`)
+      debug(
+        `No path to blacklist file provided in constructor, not attempting read`,
+      )
       return
     }
 
-    return readFile(this.path, (err, buffer) => new Promise((resolve, reject) => {
-      if (err)
-        return reject(err)
+    return readFile(this.path, (err, buffer) =>
+      new Promise((resolve, reject) => {
+        if (err) return reject(err)
 
-      const { blackList } = JSON.parse(buffer.toString())
+        const { blackList } = JSON.parse(buffer.toString())
 
-      debug(`BlackList of length ${blackList.length} read from ${this.path}`)
-      this.blacklisted = blackList
-      return resolve()
-    }).catch((err) => {
-      debug(`Failed to load blacklist from ${this.path}, defaulting to []`)
-      debug(err)
-    }))
+        debug(`BlackList of length ${blackList.length} read from ${this.path}`)
+        this.blacklisted = blackList
+        return resolve()
+      }).catch(err => {
+        debug(`Failed to load blacklist from ${this.path}, defaulting to []`)
+        debug(err)
+      }),
+    )
   }
 }

@@ -39,7 +39,7 @@ export const getConfiguredApp = (
       return res.status(401).send('Key already fueled')
     }
 
-    fuelingService
+    return fuelingService
       .sendEther(req.body.address)
       .then(() => res.sendStatus(200))
       .catch(err => {

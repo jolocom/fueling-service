@@ -110,14 +110,19 @@ describe('Fueling service integration tests', () => {
   })
 
   it('correctly rejects if requester is blacklisted', async () => {
-    const destinationAddress = '0x0000000000000000000000000000000000000000'
-    await requestEther(destinationAddress)
+    const blackListedAddress = '0x0000000000000000000000000000000000000000'
+    const nonBlackListedAddress = '0xbc563aa7C857458A812450fA1976Ce9dD8Ac2eE6'
 
-    testBlackList.addToBlacklist(destinationAddress)
-    return request(app)
+    await requestEther(blackListedAddress)
+    await requestEther(nonBlackListedAddress)
+    testBlackList.addToBlacklist(blackListedAddress)
+
+    await request(app)
       .post('/request')
-      .send({ address: destinationAddress })
+      .send({ address: blackListedAddress })
       .expect(401)
       .then(res => expect(res.error.text).to.eq('Key already fueled'))
+
+    return requestEther(nonBlackListedAddress)
   })
 })

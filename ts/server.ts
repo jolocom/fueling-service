@@ -16,8 +16,8 @@ blackList.initFromFile().then(() => {
     )
 
     // Attempt to write the in-memory blacklist to disk.
-    //@ts-ignore string =! Signals, Signals doesn't seem to be exported though
   ;['exit', 'SIGINT', 'SIGUSR1', 'SIGUSR2', 'uncaughtException'].forEach(el =>
+    //@ts-ignore string =! Signals, Signals doesn't seem to be exported though
     process.on(el, () => {
       server.close()
       blackList.writeListToFile()

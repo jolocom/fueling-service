@@ -1,5 +1,6 @@
 import { ethers } from 'ethers'
 import { config } from './config'
+import { debug } from './utils'
 import { FuelService } from './fuelAgent'
 import { getConfiguredApp } from './app'
 import { BlackList } from './blackList'
@@ -12,7 +13,7 @@ const blackList = new BlackList([], config.blackListFile)
 blackList.initFromFile().then(() => {
   const server = getConfiguredApp(new FuelService(provider), blackList).listen(
       config.port,
-      () => console.log(`Service running on ${config.port}`),
+      () => debug(`Service running on ${config.port}`),
     )
 
     // Attempt to write the in-memory blacklist to disk.

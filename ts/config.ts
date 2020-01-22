@@ -1,6 +1,6 @@
 export const config = {
   port: 8000,
-  blackListFile: './blackList',
+  blackListFile: './blackList.json',
   endpoint: 'https://rinkeby.infura.io',
   seedPhrase:
     'man area total crystal walk gate rug always eyebrow flash uncover isolate',

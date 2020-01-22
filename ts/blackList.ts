@@ -45,19 +45,14 @@ export class BlackList {
       return
     }
 
-    return readFile(this.path, (err, buffer) =>
-      new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
+      readFile(this.path, (err, buffer) => {
         if (err) return reject(err)
-
         const { blackList } = JSON.parse(buffer.toString())
-
         debug(`BlackList of length ${blackList.length} read from ${this.path}`)
         this.blacklisted = blackList
-        return resolve()
-      }).catch(err => {
-        debug(`Failed to load blacklist from ${this.path}, defaulting to []`)
-        debug(err)
-      }),
-    )
+        resolve(blackList)
+      })
+    })
   }
 }

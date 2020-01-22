@@ -3,6 +3,7 @@ import * as bodyParser from 'body-parser'
 import { FuelService } from './fuelAgent'
 import { zip } from 'ramda'
 import { BlackList } from './blackList'
+import { debug } from './utils'
 
 export const getConfiguredApp = (
   fuelingService: FuelService,
@@ -36,6 +37,7 @@ export const getConfiguredApp = (
 
   app.post('/request', (req, res) => {
     if (blackList.isBlackListed(req.body.address)) {
+      debug('Refusing to fund blacklisted key: ' + req.body.address)
       return res.status(401).send('Key already fueled')
     }
 

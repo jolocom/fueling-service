@@ -6,7 +6,7 @@
   "scripts": {
     "start": "ts-node ./ts/server.ts",
     "build": "rm -rf ./js; tsc -p ./tsconfig.json",
-    "test": "mocha --opts ./mocha.opts ./tests/index.ts --exit"
+    "test": "mocha --opts ./mocha.opts ./tests/index.ts --exit --timeout 100000"
   },
   "husky": {
     "hooks": {

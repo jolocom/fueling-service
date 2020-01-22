@@ -2,8 +2,13 @@ import * as express from 'express'
 import * as bodyParser from 'body-parser'
 import { FuelService } from './fuelAgent'
 import { zip } from 'ramda'
+import { BlackList } from './blackList'
+import { debug } from './utils'
 
-export const getConfiguredApp = (fuelingService: FuelService) => {
+export const getConfiguredApp = (
+  fuelingService: FuelService,
+  blackList: BlackList,
+) => {
   const app = express()
 
   app.use((req, res, next) => {
@@ -31,7 +36,12 @@ export const getConfiguredApp = (fuelingService: FuelService) => {
   })
 
   app.post('/request', (req, res) => {
-    fuelingService
+    if (blackList.isBlackListed(req.body.address)) {
+      debug('Refusing to fund blacklisted key: ' + req.body.address)
+      return res.status(401).send('Key already fueled')
+    }
+
+    return fuelingService
       .sendEther(req.body.address)
       .then(() => res.sendStatus(200))
       .catch(err => {

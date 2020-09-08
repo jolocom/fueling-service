@@ -4,6 +4,7 @@ import { debug } from './utils'
 import { FuelService } from './fuelAgent'
 import { getConfiguredApp } from './app'
 import { BlackList } from './blackList'
+import rateLimit from 'express-rate-limit'
 
 const NETWORK = 'rinkeby'
 const provider = ethers.getDefaultProvider(NETWORK)
@@ -11,7 +12,11 @@ const provider = ethers.getDefaultProvider(NETWORK)
 const blackList = new BlackList([], config.blackListFile)
 
 blackList.initFromFile().then(() => {
-  const server = getConfiguredApp(new FuelService(provider), blackList).listen(
+  const app = getConfiguredApp(new FuelService(provider), blackList)
+  if (config.rateLimit) {
+    app.use(rateLimit(config.rateLimit))
+  }
+  const server = app.listen(
     config.port,
     () => debug(`Service running on ${config.port}`),
   )

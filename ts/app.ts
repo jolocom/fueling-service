@@ -1,9 +1,22 @@
 import * as express from 'express'
+import { Request, Response } from 'express'
 import * as bodyParser from 'body-parser'
 import { FuelService } from './fuelAgent'
 import { zip } from 'ramda'
 import { BlackList } from './blackList'
 import { debug } from './utils'
+
+const checkIfTooManyRequests = (req: Request, res: Response) => (e) => {
+  if (e.statusCode === 429) {
+    try {
+      const { error }= JSON.parse(e.responseText)
+      return res.status(429).send(error.data)
+    } catch {
+      return res.status(500).send(e)
+    }
+  }
+  return res.status(500).send(e)
+}
 
 export const getConfiguredApp = (
   fuelingService: FuelService,
@@ -24,15 +37,24 @@ export const getConfiguredApp = (
   app.use(bodyParser.json())
 
   app.get('/balance', (req, res) => {
-    fuelingService.getTotalBalance().then(sum => res.json(sum))
+    const balanceRequest = fuelingService.getTotalBalance()
+    balanceRequest.then(sum => res.json(sum))
+    balanceRequest.catch(checkIfTooManyRequests(req, res))
+
+    return balanceRequest
   })
 
   app.get('/balances', (req, res) => {
-    fuelingService
-      .getAllBalances()
-      .then(balances =>
-        res.json(zip(balances, fuelingService.keyManager.getAllAddresses())),
+    const balancesRequest = fuelingService.getAllBalances()
+
+    balancesRequest.catch(checkIfTooManyRequests(req, res))
+    balancesRequest.then(
+      balances => res.json(
+        zip(balances, fuelingService.keyManager.getAllAddresses())
       )
+    )
+
+    return balancesRequest
   })
 
   app.post('/request', (req, res) => {
@@ -41,12 +63,10 @@ export const getConfiguredApp = (
       return res.status(401).send('Key already fueled')
     }
 
-    return fuelingService
-      .sendEther(req.body.address)
-      .then(() => res.sendStatus(200))
-      .catch(err => {
-        return res.status(500).send(err.toString())
-      })
+    const fuelingRequest = fuelingService.sendEther(req.body.address)
+    fuelingRequest.then(() => res.sendStatus(200))
+    fuelingRequest.catch(checkIfTooManyRequests(req, res))
+    return fuelingRequest
   })
 
   return app

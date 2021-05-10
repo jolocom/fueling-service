@@ -1,24 +1,31 @@
 import { ethers } from 'ethers'
 import { config } from './config'
-import { debug } from './utils'
+import { debug, info } from './utils'
 import { FuelService } from './fuelAgent'
 import { getConfiguredApp } from './app'
 import { BlackList } from './blackList'
-import rateLimit from 'express-rate-limit'
+const rateLimit = require('express-rate-limit')
 
 const NETWORK = 'rinkeby'
 const provider = ethers.getDefaultProvider(NETWORK)
 
 const blackList = new BlackList([], config.blackListFile)
 
-blackList.initFromFile().then(() => {
+const start = async () => {
+  try {
+    await blackList.initFromFile();
+  } catch(err) {
+    info(err)
+    info("no blacklist file, running free")
+  }
+
   const app = getConfiguredApp(new FuelService(provider), blackList)
   if (config.rateLimit) {
     app.use(rateLimit(config.rateLimit))
   }
   const server = app.listen(
     config.port,
-    () => debug(`Service running on ${config.port}`),
+    () => info(`Service running on ${config.port}`),
   )
 
   // Attempt to write the in-memory blacklist to disk.
@@ -29,7 +36,6 @@ blackList.initFromFile().then(() => {
       blackList.writeListToFile()
     }),
   )
-}).catch(err => {
-  debug(`Failed to load blacklist from ${this.path}, defaulting to []`)
-  debug(err)
-})
+}
+
+start()

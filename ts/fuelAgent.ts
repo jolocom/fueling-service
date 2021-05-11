@@ -48,12 +48,12 @@ export class FuelService {
       })
       .catch(err => {
         if (err.code === INSUFFICIENT_FUNDS) {
+          this.keyManager.removeKeyFromPool(wallet.privateKey)
           debug(
             `Not enough funds on ${wallet.address}, removing from pool. ${
-              this.keyManager.getAllKeys().length
+              this.keyManager.getKeys().length
             } keys left.`,
           )
-          this.keyManager.removeKeyFromPool(wallet.privateKey)
           return this.sendEther(to, value)
         } else if (contains("tx doesn't have the correct nonce", err.message)) {
           debug(
@@ -122,7 +122,7 @@ const distributeFundsLog = (
       getAddressFromPrivateKey(toFuel),
       amount,
       fuelingKey,
-    ),
+    ).then(() => fuelingService.keyManager.readdKeyToPool(toFuel))
   )
 
   return Promise.all(transactions)

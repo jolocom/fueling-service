@@ -4,7 +4,7 @@ import { debug, info } from './utils'
 import { FuelService } from './fuelAgent'
 import { getConfiguredApp } from './app'
 import { BlackList } from './blackList'
-import rateLimit from 'express-rate-limit'
+const rateLimit = require('express-rate-limit')
 
 const NETWORK = 'rinkeby'
 const provider = ethers.getDefaultProvider(NETWORK)

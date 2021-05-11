@@ -47,7 +47,8 @@ ${content}
 }
 
 const defaultSocialUrls = [
-  'https://twitter.com/mnzakisol/status/1288492560558821377'
+  'https://twitter.com/mnzakisol/status/1288492560558821377',
+  'https://twitter.com/Eugeniu_R/status/1392093094070341634'
 ]
 export const TheFaucetIsEmpty = (res, urls = defaultSocialUrls) => BaseHtml(res,
 `<div class="centered">

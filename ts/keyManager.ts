@@ -1,12 +1,13 @@
 import { Wallet } from 'ethers'
-import { without } from 'ramda'
 import { debug } from './utils'
 
 export class KeyManager {
   private keys: string[] = []
+  private emptyKeys: string[] = []
 
   constructor(seedPhrase: string, nrOfAddresses: number) {
     this.keys = deriveKeys(seedPhrase, nrOfAddresses)
+    this.emptyKeys = []
   }
 
   /**
@@ -23,8 +24,11 @@ export class KeyManager {
     return first
   }
 
-  getAllKeys(): string[] {
+  getKeys(): string[] {
     return this.keys
+  }
+  getAllKeys(): string[] {
+    return this.keys.concat(this.emptyKeys)
   }
 
   getAllAddresses(): string[] {
@@ -33,8 +37,16 @@ export class KeyManager {
 
   removeKeyFromPool = (emptyKey: string) => {
     debug(`Removed ${emptyKey} from pool`)
-    this.keys = without([emptyKey])(this.keys)
+    this.keys = this.keys.filter(k => k !== emptyKey)
+    this.emptyKeys.push(emptyKey)
   }
+
+  readdKeyToPool = (refueledKey: string) => {
+    debug(`Readded ${refueledKey} to pool`)
+    this.emptyKeys = this.emptyKeys.filter(k => k !== refueledKey)
+    this.keys.push(refueledKey)
+  }
+
 }
 
 /**

@@ -3,7 +3,8 @@ import * as bodyParser from 'body-parser'
 import { FuelService } from './fuelAgent'
 import { zip } from 'ramda'
 import { BlackList } from './blackList'
-import { debug } from './utils'
+import { debug, info } from './utils'
+import * as templates from './templates'
 
 export const getConfiguredApp = (
   fuelingService: FuelService,
@@ -23,8 +24,17 @@ export const getConfiguredApp = (
   app.use(bodyParser.urlencoded({ extended: true }))
   app.use(bodyParser.json())
 
-  app.get('/balance', (req, res) => {
-    fuelingService.getTotalBalance().then(sum => res.json(sum))
+  app.get('/', (req, res) => {
+    res.redirect('/balance')
+  })
+
+  app.get('/balance', async (req, res) => {
+    let sum = await fuelingService.getTotalBalance()
+    if (sum <= 0) {
+      return templates.TheFaucetIsEmpty(res)
+    } else {
+      return res.json(sum)
+    }
   })
 
   app.get('/balances', (req, res) => {
@@ -47,6 +57,17 @@ export const getConfiguredApp = (
       .catch(err => {
         return res.status(500).send(err.toString())
       })
+  })
+
+  let promisedRedistribution
+  app.get('/redistribute', async (req, res) => {
+    if (!promisedRedistribution)
+      promisedRedistribution = fuelingService.distributeFunds()
+
+    await promisedRedistribution
+    promisedRedistribution = null
+
+    res.redirect('/balances')
   })
 
   return app

@@ -5,7 +5,7 @@ import { contains, flatten, splitAt, sum, zip } from 'ramda'
 import { config } from './config'
 import { KeyManager } from './keyManager'
 import { INSUFFICIENT_FUNDS } from 'ethers/errors'
-import { debug } from './utils'
+import { debug, info } from './utils'
 
 export class FuelService {
   private readonly provider: BaseProvider
@@ -48,12 +48,12 @@ export class FuelService {
       })
       .catch(err => {
         if (err.code === INSUFFICIENT_FUNDS) {
+          this.keyManager.removeKeyFromPool(wallet.privateKey)
           debug(
             `Not enough funds on ${wallet.address}, removing from pool. ${
-              this.keyManager.getAllKeys().length
+              this.keyManager.getKeys().length
             } keys left.`,
           )
-          this.keyManager.removeKeyFromPool(wallet.privateKey)
           return this.sendEther(to, value)
         } else if (contains("tx doesn't have the correct nonce", err.message)) {
           debug(
@@ -77,6 +77,7 @@ export class FuelService {
   public getTotalBalance = async () => this.getAllBalances().then(sum)
 
   public async distributeFunds() {
+    info('Redistributing funds')
     const [fueler, ...rest] = this.keyManager.getAllKeys()
     const amountToDistribute = await this.getBalance(
       getAddressFromPrivateKey(fueler),
@@ -121,7 +122,7 @@ const distributeFundsLog = (
       getAddressFromPrivateKey(toFuel),
       amount,
       fuelingKey,
-    ),
+    ).then(() => fuelingService.keyManager.readdKeyToPool(toFuel))
   )
 
   return Promise.all(transactions)

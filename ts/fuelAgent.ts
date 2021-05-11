@@ -5,7 +5,7 @@ import { contains, flatten, splitAt, sum, zip } from 'ramda'
 import { config } from './config'
 import { KeyManager } from './keyManager'
 import { INSUFFICIENT_FUNDS } from 'ethers/errors'
-import { debug } from './utils'
+import { debug, info } from './utils'
 
 export class FuelService {
   private readonly provider: BaseProvider
@@ -77,6 +77,7 @@ export class FuelService {
   public getTotalBalance = async () => this.getAllBalances().then(sum)
 
   public async distributeFunds() {
+    info('Redistributing funds')
     const [fueler, ...rest] = this.keyManager.getAllKeys()
     const amountToDistribute = await this.getBalance(
       getAddressFromPrivateKey(fueler),

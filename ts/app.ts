@@ -3,7 +3,7 @@ import * as bodyParser from 'body-parser'
 import { FuelService } from './fuelAgent'
 import { zip } from 'ramda'
 import { BlackList } from './blackList'
-import { debug } from './utils'
+import { debug, info } from './utils'
 import * as templates from './templates'
 
 export const getConfiguredApp = (
@@ -57,6 +57,17 @@ export const getConfiguredApp = (
       .catch(err => {
         return res.status(500).send(err.toString())
       })
+  })
+
+  let promisedRedistribution
+  app.get('/redistribute', async (req, res) => {
+    if (!promisedRedistribution)
+      promisedRedistribution = fuelingService.distributeFunds()
+
+    await promisedRedistribution
+    promisedRedistribution = null
+
+    res.redirect('/balances')
   })
 
   return app

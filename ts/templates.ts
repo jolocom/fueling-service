@@ -69,7 +69,7 @@ export const TheFaucetIsEmpty = (res, urls = defaultSocialUrls) => BaseHtml(res,
   </p>
 
   <p>
-  then come back to click <a href="/rebalance">here</a>
+  then come back to click <a href="/redistribute">here</a>
   </p>
 </div>
 `)

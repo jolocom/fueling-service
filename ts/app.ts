@@ -5,6 +5,7 @@ import { zip } from 'ramda'
 import { BlackList } from './blackList'
 import { debug, info } from './utils'
 import * as templates from './templates'
+import { config } from './config'
 
 export const getConfiguredApp = (
   fuelingService: FuelService,
@@ -28,9 +29,16 @@ export const getConfiguredApp = (
     res.redirect('/balance')
   })
 
+  const numKeys = fuelingService.keyManager.getAllKeys().length
+  // If all the keys have less than the minimum amount
+  // then none of the can be used to send the required ether
+  // so if we have less than the 'amount' for 1 transaction * numKeys
+  // then the faucet is considered empty
+  const minBalance = config.amount * numKeys
+
   app.get('/balance', async (req, res) => {
     let sum = await fuelingService.getTotalBalance()
-    if (sum <= 0) {
+    if (sum <= minBalance) {
       return templates.TheFaucetIsEmpty(res)
     } else {
       return res.json(sum)

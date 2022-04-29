@@ -1,10 +1,9 @@
 import { Wallet } from 'ethers'
-import { BaseProvider, TransactionReceipt } from 'ethers/providers'
-import { formatEther, parseEther } from 'ethers/utils'
+import { BaseProvider, TransactionReceipt } from "@ethersproject/providers"
+import { utils, errors } from 'ethers'
 import { contains, flatten, splitAt, sum, zip } from 'ramda'
 import { config } from './config'
 import { KeyManager } from './keyManager'
-import { INSUFFICIENT_FUNDS } from 'ethers/errors'
 import { debug, info } from './utils'
 
 export class FuelService {
@@ -32,9 +31,9 @@ export class FuelService {
     return wallet
       .sendTransaction({
         to,
-        value: parseEther(value.toString()),
+        value: utils.parseEther(value.toString()),
+        type: 2,
         gasLimit: config.gasLimit,
-        gasPrice: config.gasPrice,
       })
       .then(async txHash => {
         debug(`Transaction hash: ${txHash.hash}`)
@@ -47,7 +46,7 @@ export class FuelService {
         }
       })
       .catch(err => {
-        if (err.code === INSUFFICIENT_FUNDS) {
+        if (err.code === errors.INSUFFICIENT_FUNDS) {
           this.keyManager.removeKeyFromPool(wallet.privateKey)
           debug(
             `Not enough funds on ${wallet.address}, removing from pool. ${
@@ -60,6 +59,8 @@ export class FuelService {
             `Conflicting nonces from fueling address ${wallet.address}, trying different key`,
           )
           return this.sendEther(to, value)
+        } else {
+          debug(`Failed to transfer funds ${err.message}`)
         }
         // In case of unhandled error, we don't do not recurse for now
       })
@@ -68,7 +69,7 @@ export class FuelService {
   public getBalance = async (address: string): Promise<number> =>
     this.provider
       .getBalance(address)
-      .then(formatEther)
+      .then(utils.formatEther)
       .then(Number)
 
   public getAllBalances = async () =>

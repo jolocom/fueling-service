@@ -1,13 +1,16 @@
-import { ethers } from 'ethers'
+import { InfuraProvider } from '@ethersproject/providers'
 import { config } from './config'
-import { debug, info } from './utils'
+import { info } from './utils'
 import { FuelService } from './fuelAgent'
 import { getConfiguredApp } from './app'
 import { BlackList } from './blackList'
 const rateLimit = require('express-rate-limit')
 
 const NETWORK = 'rinkeby'
-const provider = ethers.getDefaultProvider(NETWORK)
+const provider = new InfuraProvider(NETWORK, {
+  projectId: config.projectId,
+  projectSecret: config.projectSecret
+})
 
 const blackList = new BlackList([], config.blackListFile)
 

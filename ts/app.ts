@@ -25,11 +25,7 @@ export const getConfiguredApp = (
   app.use(bodyParser.urlencoded({ extended: true }))
   app.use(bodyParser.json())
 
-  app.get('/', (req, res) => {
-    res.redirect('/balance')
-  })
-
-  app.get(`${config.pathPrefix}/balance`, async (req, res) => {
+  app.get(`/${config.pathPrefix}/balance`, async (req, res) => {
     let sum = await fuelingService.getTotalBalance()
     if (sum <= 0) {
       return templates.TheFaucetIsEmpty(res)
@@ -38,7 +34,7 @@ export const getConfiguredApp = (
     }
   })
 
-  app.get(`${config.pathPrefix}/balances`, (req, res) => {
+  app.get(`/${config.pathPrefix}/balances`, (req, res) => {
     fuelingService
       .getAllBalances()
       .then(balances =>

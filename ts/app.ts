@@ -3,7 +3,8 @@ import * as bodyParser from 'body-parser'
 import { FuelService } from './fuelAgent'
 import { zip } from 'ramda'
 import { BlackList } from './blackList'
-import { debug, info } from './utils'
+import { debug } from './utils'
+import { config } from './config'
 import * as templates from './templates'
 
 export const getConfiguredApp = (
@@ -28,7 +29,7 @@ export const getConfiguredApp = (
     res.redirect('/balance')
   })
 
-  app.get('/balance', async (req, res) => {
+  app.get(`${config.pathPrefix}/balance`, async (req, res) => {
     let sum = await fuelingService.getTotalBalance()
     if (sum <= 0) {
       return templates.TheFaucetIsEmpty(res)
@@ -37,7 +38,7 @@ export const getConfiguredApp = (
     }
   })
 
-  app.get('/balances', (req, res) => {
+  app.get(`${config.pathPrefix}/balances`, (req, res) => {
     fuelingService
       .getAllBalances()
       .then(balances =>

@@ -2,7 +2,7 @@ export const config = {
   // Infura credentials
   projectSecret: "",
   projectId: "",
-
+  pathPrefix: "",
   port: 8000,
   blackListFile: './blackList.json',
   endpoint: 'https://rinkeby.infura.io/v3/64fa85ca0b28483ea90919a83630d5d8',

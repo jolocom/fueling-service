@@ -8,12 +8,6 @@
     "build": "rm -rf ./js; tsc -p ./tsconfig.json",
     "test": "mocha --opts ./mocha.opts ./tests/index.ts --exit --timeout 100000"
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "precise-commits",
-      "prepare-commit-msg": "exec < /dev/tty && git cz --hook || true"
-    }
-  },
   "dependencies": {
     "@types/mocha": "^5.2.7",
     "body-parser": "^1.18.2",

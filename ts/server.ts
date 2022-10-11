@@ -1,4 +1,4 @@
-import { InfuraProvider } from '@ethersproject/providers'
+import { JsonRpcProvider } from '@ethersproject/providers'
 import { config } from './config'
 import { info } from './utils'
 import { FuelService } from './fuelAgent'
@@ -7,10 +7,7 @@ import { BlackList } from './blackList'
 const rateLimit = require('express-rate-limit')
 
 const NETWORK = 'rinkeby'
-const provider = new InfuraProvider(NETWORK, {
-  projectId: config.projectId,
-  projectSecret: config.projectSecret
-})
+const provider = new JsonRpcProvider(config.endpoint)
 
 const blackList = new BlackList([], config.blackListFile)
 
